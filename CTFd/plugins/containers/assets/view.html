@@ -1,0 +1,22 @@
+{% extends "challenge.html" %}
+
+{% block connection_info %}
+<div class="mb-3 text-center deployment-actions">
+  <script>
+	  
+    view_container_info({{ challenge.id }})
+  </script>
+  <div class="alert alert-info"></div>
+  <span>
+    <button onclick="container_request({{ challenge.id }})" class="create-chal btn btn-primary d-none">
+      <small style="color:black;"> Fetch Instance </small>
+    </button>
+    <button onclick="container_renew({{ challenge.id }})" class="extend-chal btn btn-info d-none">
+      <small style="color:black;"> Extend Time </small>
+    </button>
+    <button onclick="container_stop({{ challenge.id }})" class="terminate-chal btn btn-danger d-none">
+      <small style="color:black;"> Terminate </small>
+    </button>
+  </span>
+</div>
+{% endblock %}
