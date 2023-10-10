@@ -6,7 +6,9 @@
 	  
     view_container_info({{ challenge.id }})
   </script>
-  <div class="alert alert-info"></div>
+  <div class="alert alert-info">
+	    <button onclick="view_container_info({{ challenge.id }})" class="btn btn-success start-chal"> Connection Info</button>
+  </div>
   <span>
     <button onclick="container_request({{ challenge.id }})" class="create-chal btn btn-primary d-none">
       <small style="color:black;"> Fetch Instance </small>
