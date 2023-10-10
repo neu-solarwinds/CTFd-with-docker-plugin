@@ -94,11 +94,14 @@ class ContainerChallenge(BaseChallenge):
         # Hence this file uses from __future__ import division
         
         # DIPTENDU - FIX THE DECAY FOR STATIC VALUE
-        
-        value = (
-            ((challenge.minimum - challenge.initial) / (challenge.decay ** 2))
-            * (solve_count ** 2)
-        ) + challenge.initial
+
+        if challenge.decay <= 0:
+            value = challenge.initial
+        else:
+            value = (
+                ((challenge.minimum - challenge.initial) / (challenge.decay ** 2))
+                * (solve_count ** 2)
+            ) + challenge.initial
 
         value = math.ceil(value)
 
