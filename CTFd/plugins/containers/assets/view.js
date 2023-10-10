@@ -84,7 +84,7 @@ function createChallengeLinkElement(data, alert) {
 	expires.textContent = "Expires in " + calculateExpiry(new Date(data.expires)) + " minutes.";
 
 	alert.append(expires);
-    alert.append(document.createElement('br'))
+   	alert.append(document.createElement('br'));
 
 	if (data.connect == "tcp") {
 		let codeElement = document.createElement('code');
