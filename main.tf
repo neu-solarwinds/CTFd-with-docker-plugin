@@ -1,12 +1,11 @@
-
 provider "google" {
   region = "us-central1"
 }
 
-resource "google_project" "new_project" {
+resource "google_project" "project" {
   name       = "ctfd-project"
+  org_id     = 0
   project_id = "ctfd-${random_string.project_suffix.result}"
-  org_id     = "0"
 }
 
 resource "random_string" "project_suffix" {
@@ -15,19 +14,26 @@ resource "random_string" "project_suffix" {
   special = false
 }
 
-resource "google_project_service" "compute_api" {
-  project = google_project.new_project.project_id
+resource "google_project_service" "service" {
+  project = google_project.project.project_id
   service = "compute.googleapis.com"
+
+  disable_on_destroy = false
 }
 
-resource "google_project_service" "service_networking_api" {
-  project = google_project.new_project.project_id
-  service = "servicenetworking.googleapis.com"
+resource "google_project_service" "service2" {
+  project = google_project.project.project_id
+  service = "logging.googleapis.com"
+
+  disable_on_destroy = false
 }
 
-resource "google_compute_instance" "vm1" {
-  project      = google_project.new_project.project_id
-  name         = "vm1"
+resource "google_compute_address" "static_address" {
+  name = "ctfd-static-ip"
+}
+
+resource "google_compute_instance" "vm" {
+  name         = "ctfd-vm"
   machine_type = "f1-micro"
   zone         = "us-central1-a"
 
@@ -41,70 +47,23 @@ resource "google_compute_instance" "vm1" {
     network = "default"
 
     access_config {
-      // Ephemeral IP
+      nat_ip = google_compute_address.static_address.address
     }
   }
 
-  metadata_startup_script = <<-SCRIPT
-    apt-get update && apt-get install -y git docker.io docker-compose
-    git clone https://github.com/neu-solarwinds/CTFd-with-docker-plugin
-    echo 'location ~ ^/admin { deny all; }' >> CTFd-with-docker-plugin/conf/nginx/http.conf
-    cd CTFd-with-docker-plugin && docker-compose up -d
-  SCRIPT
-
-  depends_on = [
-    google_project_service.compute_api,
-    google_project_service.service_networking_api
-  ]
+  metadata = {
+    startup-script = <<-EOF
+      sudo apt-get update
+      sudo apt-get install -y docker.io git
+      git clone https://github.com/neu-solarwinds/CTFd-with-docker-plugin
+      cd CTFd-with-docker-plugin
+      docker-compose up -d
+    EOF
+  }
 }
 
-resource "google_compute_instance" "vm2" {
-  project      = google_project.new_project.project_id
-  name         = "vm2"
-  machine_type = "f1-micro"
-  zone         = "us-central1-a"
-
-  boot_disk {
-    initialize_params {
-      image = "debian-cloud/debian-9"
-    }
-  }
-
-  network_interface {
-    network = "default"
-
-    access_config {
-      // Ephemeral IP
-    }
-  }
-
-  metadata_startup_script = <<-SCRIPT
-    apt-get update && apt-get install -y docker.io
-    systemctl enable docker && systemctl start docker
-  SCRIPT
-
-  depends_on = [
-    google_project_service.compute_api,
-    google_project_service.service_networking_api
-  ]
-}
-
-resource "google_compute_firewall" "allow-8000" {
-  project = google_project.new_project.project_id
-  name    = "allow-8000"
-  network = "default"
-
-  allow {
-    protocol = "tcp"
-    ports    = ["8000"]
-  }
-
-  source_ranges = ["0.0.0.0/0"]
-}
-
-resource "google_compute_firewall" "allow-8080" {
-  project = google_project.new_project.project_id
-  name    = "allow-8080"
+resource "google_compute_firewall" "allow_http" {
+  name    = "allow-http"
   network = "default"
 
   allow {
@@ -115,49 +74,42 @@ resource "google_compute_firewall" "allow-8080" {
   source_ranges = ["0.0.0.0/0"]
 }
 
+resource "google_logging_project_sink" "logging_sink" {
+  name        = "ctfd-logs"
+  destination = "logging.googleapis.com"
 
-# Existing configuration ...
-
-resource "google_compute_address" "vm1_static_ip" {
-  project = google_project.new_project.project_id
-  name    = "vm1-static-ip"
-  region  = "us-central1"
+  filter = "resource.type=gce_instance AND logName:docker"
 }
 
-resource "google_compute_address" "vm2_static_ip" {
-  project = google_project.new_project.project_id
-  name    = "vm2-static-ip"
-  region  = "us-central1"
+resource "google_monitoring_notification_channel" "email" {
+  display_name = "Email Notification"
+  type         = "email"
+  labels = {
+    email_address = "Sneider.b@northeastern.edu"
+  }
 }
 
-# Update VM1 definition
-resource "google_compute_instance" "vm1" {
-  # ... existing VM1 configuration ...
+resource "google_monitoring_alert_policy" "alert_policy" {
+  display_name = "CTFd Docker Down Alert"
 
-  network_interface {
-    network = "default"
-
-    access_config {
-      nat_ip = google_compute_address.vm1_static_ip.address
+  conditions {
+    display_name = "CTFd Docker Down"
+    condition_threshold {
+      filter          = "metric.type=\"compute.googleapis.com/instance/disk/write_bytes_count\" AND resource.type=\"gce_instance\" AND resource.label.\"instance_id\"=\"ctfd-vm\""
+      comparison      = "COMPARISON_LT"
+      threshold_value = 1
+      duration        = "60s"
+      aggregations {
+        alignment_period   = "60s"
+        per_series_aligner = "ALIGN_RATE"
+      }
     }
   }
 
-  # ... rest of VM1 configuration ...
+  combiner = "OR"
+  enabled  = true
+
+  notification_channels = [
+    google_monitoring_notification_channel.email.name
+  ]
 }
-
-# Update VM2 definition
-resource "google_compute_instance" "vm2" {
-  # ... existing VM2 configuration ...
-
-  network_interface {
-    network = "default"
-
-    access_config {
-      nat_ip = google_compute_address.vm2_static_ip.address
-    }
-  }
-
-  # ... rest of VM2 configuration ...
-}
-
-# ... rest of the configuration ...
