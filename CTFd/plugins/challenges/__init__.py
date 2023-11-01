@@ -107,7 +107,7 @@ class BaseChallenge(object):
         db.session.commit()
 
     @classmethod
-    def attempt(cls, challenge, request):
+    def attempt(cls, challenge, request, team):
         """
         This method is used to check whether a given input is right or wrong. It does not make any changes and should
         return a boolean for correctness and a string to be shown to the user. It is also in charge of parsing the
@@ -120,13 +120,35 @@ class BaseChallenge(object):
         data = request.form or request.get_json()
         submission = data["submission"].strip()
         flags = Flags.query.filter_by(challenge_id=challenge.id).all()
+        is_team_based_flag = False
+
+        # HERE IS THE KEYWORD BY WHICH WE DETEMINE IF THE FLAG IS PER TEAM / SINGLE FLAG
+        # the base flag might be in the db. If someone submits the base flag, it should not count.
         for flag in flags:
-            try:
-                if get_flag_class(flag.type).compare(flag, submission):
-                    return True, "Correct"
-            except FlagException as e:
-                return False, str(e)
-        return False, "Incorrect"
+            if "TEAMID" in flag.data:
+                is_team_based_flag = True
+        
+        if is_team_based_flag:
+            for flag in flags:
+                try:
+                    if get_flag_class(flag.type).compareteam(flag, submission, team):
+                        return True, "Correct"
+                except FlagException as e:
+                    return False, str(e)
+        
+        
+            return False, "Incorrect"
+
+        # FOR STATIC SINGLE / STATIC MULTI FLAGS
+        else:
+            for flag in flags:
+                try:
+                    if get_flag_class(flag.type).compare(flag, submission):
+                        return True, "Correct"
+                except FlagException as e:
+                    return False, str(e)
+            return False, "Incorrect"
+
 
     @classmethod
     def solve(cls, user, team, challenge, request):

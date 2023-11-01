@@ -17,6 +17,7 @@ from CTFd.utils.modes import get_model
 from .models import ContainerChallengeModel, ContainerInfoModel, ContainerSettingsModel
 from .container_manager import ContainerManager, ContainerException
 
+TEAM_INDIVIDUAL_FLAGS = True
 
 class ContainerChallenge(BaseChallenge):
     id = "container"  # Unique identifier used to register challenges
@@ -35,6 +36,8 @@ class ContainerChallenge(BaseChallenge):
     route = "/plugins/containers/assets/"
 
     challenge_model = ContainerChallengeModel
+
+    
     
     @classmethod
     def read(cls, challenge):
@@ -239,12 +242,22 @@ def load(app: Flask):
 
         # TODO: Should insert before creating container, then update. That would avoid a TOCTOU issue
 
+        # DIPTENDU - IF TEAM_INDIVIDUAL_FLAGS is True start the container as <name>:TEAM# Else proceed with normal flow
         # Run a new Docker container
-        try:
-            created_container = container_manager.create_container(
-                challenge.image, challenge.port, challenge.command, challenge.volumes)
-        except ContainerException as err:
-            return {"error": str(err)}
+        if TEAM_INDIVIDUAL_FLAGS:
+            team_image = challenge.image.split(":")[0]+":TEAM"+str(team_id)
+            #print("STARTING --->",team_image)
+            try:
+                created_container = container_manager.create_container(
+                    team_image, challenge.port, challenge.command, challenge.volumes)
+            except ContainerException as err:
+                return {"error": str(err)}
+        else:
+            try:
+                created_container = container_manager.create_container(
+                    challenge.image, challenge.port, challenge.command, challenge.volumes)
+            except ContainerException as err:
+                return {"error": str(err)}
 
         # Fetch the random port Docker assigned
         port = container_manager.get_container_port(created_container.id)

@@ -1,7 +1,7 @@
 import re
 
 from CTFd.plugins import register_plugin_assets_directory
-
+from CTFd.utils.logging import log
 
 class FlagException(Exception):
     def __init__(self, message):
@@ -43,6 +43,42 @@ class CTFdStaticFlag(BaseFlag):
             for x, y in zip(saved, provided):
                 result |= ord(x) ^ ord(y)
         return result == 0
+    
+    @staticmethod
+    def compareteam(chal_key_obj, provided, team):
+        saved = chal_key_obj.content
+        data = chal_key_obj.data
+        
+        if "=" not in data:
+            return False 
+        
+        print("Submitted by Team = ",team.id)
+        flag_team_id = int(data.split("=")[1])
+        print("FLAG TEAM ID =",flag_team_id)
+        print("PROVIDED FLAG = ",provided)
+        print("TABLE FLAG = ",saved)
+
+        if len(saved) != len(provided):
+            return False
+        
+        result = 0
+        
+        for x, y in zip(saved, provided):
+            result |= ord(x) ^ ord(y)
+        
+      
+        if result == 0 and flag_team_id != team.id:
+            log(
+                "submissions",
+                "Possible cheating. Cheater Team - {team} Submitted Team {flag_team_id} flag.",
+                team=team.id, flag_team_id = flag_team_id,
+            )
+            return False
+        
+        if result == 0 and flag_team_id == team.id:
+            return True
+        
+        return False
 
 
 class CTFdRegexFlag(BaseFlag):
