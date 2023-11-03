@@ -96,15 +96,15 @@ We utilize 2 scripts to create and insert the unique flags to the **flags** tabl
 
 	Once these are set, run your chosen script. It takes 2 arguments first is the source repo of challenges (same as the argument for makecontainers.py) second is a target repo where TEAM based copies will be created with individual flag. For example - `genteamflags_batch_sqlite.py ./challenges ./teams` will first scan the challenges for `Dockerfile` and copy them based on TEAM# - 
 
-	teams
-	│
-	├─ TEAM1
-	│  ├─ chal1
-	│  └─ chal3
-	│
-	└─ TEAM2
-	   ├─ chal1
-	   └─ chal3
+		teams
+		│
+		├─ TEAM1
+		│  ├─ chal1
+		│  └─ chal3
+		│
+		└─ TEAM2
+		   ├─ chal1
+		   └─ chal3
 
 	
 	Each of the challenges will have an updated `flag.txt` file with the new content as `baseflag + 8 random characters` e.g. if /challenges/chal1/flag.txt was `flag{check}` /teams/TEAM1/chal1/flag.txt will have `flag{check_$$$$$$$$}` where `$` is a random char `[A-Za-z0-9]`. Same with TEAM2, .. and so on. 
