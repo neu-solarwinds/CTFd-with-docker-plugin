@@ -42,11 +42,16 @@ resource "google_compute_instance" "vm" {
       nat_ip = google_compute_address.static_address.address
     }
   }
-
+  
+  service_account {
+    scopes = ["logging-write"]
+  }
   metadata = {
+    google-logging-enabled    = "true"
     startup-script = <<-EOF
       #!/bin/bash
       echo 'starting startup script'
+      sudo mkdir /ctfd
       sudo apt-get update
       sudo apt-get install -y docker.io git
       # Docker is already installed? just need to run the daemon
@@ -61,7 +66,12 @@ resource "google_compute_instance" "vm" {
       git clone https://github.com/neu-solarwinds/CTFd-with-docker-plugin
       cd CTFd-with-docker-plugin
       docker-compose up -d
+      cd ..
       echo 'finished startup script'
+      echo 'start configure ctfd'
+      git clone https://github.com/neu-solarwinds/CTF-goat.git  
+      python3 CTFd-with-docker-plugin/makecontainers.py ./CTF-goat
+      echo 'finish configure ctfd'
     EOF
   }
 }

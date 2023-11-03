@@ -27,7 +27,12 @@ services:
     networks:
         default:
         internal:
-
+    logging:
+      driver: gcplogs
+      options:
+        env: production
+        gcp-project: carbide-datum-402521
+        labels: ctfd
   nginx:
     image: nginx:stable
     restart: always
@@ -37,7 +42,12 @@ services:
       - "8080:8080"
     depends_on:
       - ctfd
-
+    logging:
+      driver: gcplogs
+      options:
+        env: production
+        gcp-project: carbide-datum-402521
+        labels: nginx
   db:
     image: mariadb:10.4.12
     restart: always
@@ -52,7 +62,12 @@ services:
         internal:
     # This command is required to set important mariadb defaults
     command: [mysqld, --character-set-server=utf8mb4, --collation-server=utf8mb4_unicode_ci, --wait_timeout=28800, --log-warnings=0]
-
+    logging:
+      driver: gcplogs
+      options:
+        env: production
+        gcp-project: carbide-datum-402521
+        labels: sql
   cache:
     image: redis:4
     restart: always
@@ -60,7 +75,12 @@ services:
     - .data/redis:/data
     networks:
         internal:
-
+    logging:
+      driver: gcplogs
+      options:
+        env: production
+        gcp-project: carbide-datum-402521
+        labels: redis
 networks:
     default:
     internal:
