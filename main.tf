@@ -70,6 +70,7 @@ resource "google_compute_instance" "vm" {
       echo 'finished startup script'
       echo 'start configure ctfd'
       git clone https://github.com/neu-solarwinds/CTF-goat.git  
+      python3 CTFd-with-docker-plugin/makecontainers.py ./CTF-goat
       echo 'finish configure ctfd'
     EOF
   }
