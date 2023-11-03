@@ -44,6 +44,7 @@ resource "google_compute_instance" "vm" {
   }
 
   metadata = {
+    google-logging-enabled    = "true"
     startup-script = <<-EOF
       #!/bin/bash
       echo 'starting startup script'
