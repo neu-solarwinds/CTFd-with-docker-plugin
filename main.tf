@@ -42,7 +42,10 @@ resource "google_compute_instance" "vm" {
       nat_ip = google_compute_address.static_address.address
     }
   }
-
+  
+  service_account {
+    scopes = ["logging-write"]
+  }
   metadata = {
     google-logging-enabled    = "true"
     startup-script = <<-EOF
