@@ -42,13 +42,13 @@ resource "google_compute_instance" "vm" {
       nat_ip = google_compute_address.static_address.address
     }
   }
-  
+
   service_account {
     scopes = ["logging-write"]
   }
   metadata = {
-    google-logging-enabled    = "true"
-    startup-script = <<-EOF
+    google-logging-enabled = "true"
+    startup-script         = <<-EOF
       #!/bin/bash
       echo 'starting startup script'
       sudo mkdir /ctfd
@@ -63,14 +63,15 @@ resource "google_compute_instance" "vm" {
       echo 'Set the gcplogs logging driver for Docker'
       sudo echo '{ "log-driver": "gcplogs", "log-opts": { "gcp-meta-name": "my-instance-name" } }' | sudo tee /etc/docker/daemon.json
       sudo systemctl restart docker
-      git clone https://github.com/neu-solarwinds/CTFd-with-docker-plugin
+      sudo git clone https://github.com/neu-solarwinds/CTFd-with-docker-plugin
       cd CTFd-with-docker-plugin
       docker-compose up -d
       cd ..
       echo 'finished startup script'
       echo 'start configure ctfd'
-      git clone https://github.com/neu-solarwinds/CTF-goat.git  
-      python3 CTFd-with-docker-plugin/makecontainers.py ./CTF-goat
+      sudo git clone https://github.com/neu-solarwinds/CTF-goat.git  
+      sudo python3 CTFd-with-docker-plugin/makecontainers.py ./CTF-goat/challenges
+      sudo mkdir -r /CTF-goat/teams
       echo 'finish configure ctfd'
     EOF
   }
@@ -85,9 +86,24 @@ resource "google_compute_firewall" "allow_http" {
     ports    = ["8000"]
   }
 
+  log_config {
+    metadata = "INCLUDE_ALL_METADATA"
+  }
   source_ranges = ["0.0.0.0/0"]
 }
+resource "google_compute_firewall" "allow_http" {
+  name    = "allow-challenges-access"
+  network = "default"
 
+  allow {
+    protocol = "tcp"
+    ports    = ["32000-34000"]
+  }
+  log_config {
+    metadata = "INCLUDE_ALL_METADATA"
+  }
+  source_ranges = ["0.0.0.0/0"]
+}
 # todo need 
 # Configure the Docker daemon to use the gcplogs logging driver by setting the log-driver and log-opts keys in the daemon.json file. For example, you can set the log-driver key to gcplogs and the gcp-meta-name option to a unique name for your instance. Here is an example daemon.json file:
 # {
