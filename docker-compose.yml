@@ -6,7 +6,7 @@ services:
     user: root
     restart: always
     ports:
-      - "8000:8000"
+      - "80:8000"
     environment:
       - SECRET_KEY=diptendutestctfd
       - UPLOAD_FOLDER=/var/uploads

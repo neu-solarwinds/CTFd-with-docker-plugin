@@ -83,9 +83,9 @@ resource "google_compute_firewall" "allow_http" {
 
   allow {
     protocol = "tcp"
-    ports    = ["8000"]
+    ports    = ["443","80"]
   }
-
+  # this will allow the cloudflare dns proxy to also route to 443
   log_config {
     metadata = "INCLUDE_ALL_METADATA"
   }
