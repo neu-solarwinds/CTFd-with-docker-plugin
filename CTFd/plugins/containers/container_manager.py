@@ -8,6 +8,7 @@ from apscheduler.schedulers import SchedulerNotRunningError
 import docker
 import paramiko.ssh_exception
 import requests
+import random
 
 from CTFd.models import db
 from .models import ContainerInfoModel
@@ -176,7 +177,7 @@ class ContainerManager:
         try:
             return self.client.containers.run(
                 image,
-                ports={str(port): None},
+                ports={str(port): str(random.randint(32000,34000))},
                 command=command,
                 detach=True,
                 auto_remove=True,
