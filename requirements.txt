@@ -184,3 +184,5 @@ zope-interface==5.2.0
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools
+
+mysql-connector-python
